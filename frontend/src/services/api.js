@@ -103,7 +103,10 @@ export const orderAPI = {
 };
 
 export const adminAPI = {
-  getReports: () => api.get('/admin/reports')
+  getReports: () => api.get('/admin/reports'),
+  getPendingDesigners: () => api.get('/admin/designers/pending'),
+  approveDesigner: (designerId) => api.put(`/admin/designers/${designerId}/approve`),
+  rejectDesigner: (designerId, data) => api.put(`/admin/designers/${designerId}/reject`, data)
 };
 
 export const uploadAPI = {
@@ -121,6 +124,11 @@ export const uploadAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   }
+};
+
+export const userAPI = {
+  getAll: (params) => api.get('/users/all', { params }),
+  updateStatus: (userId, data) => api.put(`/users/${userId}/status`, data)
 };
 
 export default api;

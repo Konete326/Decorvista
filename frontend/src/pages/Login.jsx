@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser } from '../store/slices/authSlice';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -8,9 +9,9 @@ const Login = () => {
     password: ''
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
+  const dispatch = useDispatch();
+  const { loading } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
@@ -25,19 +26,17 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    const result = await login(formData);
-    
-    if (result.success) {
+    try {
+      const result = await dispatch(loginUser(formData)).unwrap();
+      
       if (result.user.role === 'designer' && !result.user.profileCompleted) {
         navigate('/complete-profile', { replace: true });
       } else {
         navigate(from, { replace: true });
       }
-    } else {
-      setError(result.error || 'Login failed');
-      setLoading(false);
+    } catch (error) {
+      setError(error.message || 'Login failed');
     }
   };
 

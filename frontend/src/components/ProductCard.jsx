@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../store/slices/cartSlice';
+import { useSelector } from 'react-redux';
 
 const ProductCard = ({ product }) => {
-  const { addToCart } = useCart();
-  const { isAuthenticated } = useAuth();
+  const dispatch = useDispatch();
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -13,9 +14,11 @@ const ProductCard = ({ product }) => {
       window.location.href = '/login';
       return;
     }
-    const result = await addToCart(product._id);
-    if (result.success) {
+    try {
+      await dispatch(addToCart({ productId: product._id, quantity: 1 })).unwrap();
       // You could add a toast notification here
+    } catch (error) {
+      alert(error.message || 'Failed to add to cart');
     }
   };
 

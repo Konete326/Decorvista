@@ -5,7 +5,7 @@ const { body, query } = require('express-validator');
 const getDesigners = async (req, res, next) => {
   try {
     const { specialty, location, page = 1, limit = 10 } = req.query;
-    const queryObj = {};
+    const queryObj = { status: 'approved' };
 
     if (specialty) {
       queryObj.specialties = { $in: [specialty] };
@@ -43,8 +43,9 @@ const getMyDesignerProfile = async (req, res, next) => {
       .populate('user', 'name email phone avatarUrl');
 
     if (!designer) {
-      return res.status(404).json({
+      return res.json({
         success: false,
+        data: null,
         message: 'Designer profile not found'
       });
     }
@@ -81,6 +82,9 @@ const getDesigner = async (req, res, next) => {
 
 const createDesigner = async (req, res, next) => {
   try {
+    console.log('Creating designer profile for user:', req.user.id);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const existingDesigner = await Designer.findOne({ user: req.user.id });
     if (existingDesigner) {
       return res.status(400).json({
@@ -97,13 +101,28 @@ const createDesigner = async (req, res, next) => {
       profileCompleted: true
     });
 
+    // Optionally sync phone number to User profile if provided
+    if (req.body.phone) {
+      await User.findByIdAndUpdate(req.user.id, { phone: req.body.phone });
+    }
+
     await designer.populate('user', 'name email avatarUrl');
 
+    console.log('Designer created successfully:', designer._id);
     res.status(201).json({
       success: true,
       data: designer
     });
   } catch (error) {
+    console.error('Error creating designer:', error.message);
+    if (error.name === 'ValidationError') {
+      console.error('Validation errors:', error.errors);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: Object.values(error.errors).map(e => ({ msg: e.message, field: e.path }))
+      });
+    }
     next(error);
   }
 };
@@ -142,10 +161,13 @@ const updateDesigner = async (req, res, next) => {
 };
 
 const validateCreateDesigner = [
-  body('bio').optional().isLength({ max: 500 }).withMessage('Bio cannot exceed 500 characters'),
+  body('professionalTitle').notEmpty().withMessage('Professional title is required'),
+  body('bio').isLength({ min: 10, max: 500 }).withMessage('Bio must be between 10-500 characters'),
+  body('location').notEmpty().withMessage('Location is required'),
+  body('hourlyRate').isFloat({ min: 0 }).withMessage('Hourly rate must be a positive number'),
   body('specialties').optional().isArray().withMessage('Specialties must be an array'),
-  body('location').optional().trim().notEmpty().withMessage('Location cannot be empty'),
-  body('portfolio').optional().isArray().withMessage('Portfolio must be an array')
+  body('portfolio').optional().isArray().withMessage('Portfolio must be an array'),
+  body('availabilitySlots').optional().isArray().withMessage('Availability slots must be an array')
 ];
 
 const validateUpdateDesigner = [

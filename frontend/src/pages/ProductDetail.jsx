@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { productAPI, reviewAPI } from '../services/api';
-import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { addToCart } from '../store/slices/cartSlice';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
-  const { isAuthenticated } = useAuth();
+  const dispatch = useDispatch();
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const { loading: cartLoading } = useSelector((state) => state.cart);
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,28 +43,56 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = async () => {
-    if (!isAuthenticated) {
+    if (!user) {
       navigate('/login');
       return;
     }
-    const result = await addToCart(product._id, quantity);
-    if (result.success) {
-      alert('Added to cart successfully!');
-    } else {
-      alert(result.error || 'Failed to add to cart');
+
+    // Restrict admin from adding to cart
+    if (user.role === 'admin') {
+      alert('Admins cannot purchase products. Only users and designers can make purchases.');
+      return;
+    }
+
+    try {
+      await dispatch(addToCart({ productId: product._id, quantity })).unwrap();
+      navigate('/cart');
+    } catch (error) {
+      alert(error.message || 'Failed to add to cart');
     }
   };
 
   const handleBuyNow = async () => {
-    if (!isAuthenticated) {
+    if (!user) {
       navigate('/login');
       return;
     }
-    const result = await addToCart(product._id, quantity);
-    if (result.success) {
-      navigate('/cart');
-    } else {
-      alert(result.error || 'Failed to add to cart');
+
+    // Restrict admin from buying products
+    if (user.role === 'admin') {
+      alert('Admins cannot purchase products. Only users and designers can make purchases.');
+      return;
+    }
+
+    try {
+      // Add to cart first
+      await dispatch(addToCart({ 
+        productId: product._id, 
+        quantity: quantity 
+      })).unwrap();
+
+      // Navigate to checkout with product details
+      navigate('/checkout', {
+        state: {
+          directBuy: true,
+          product: {
+            ...product,
+            quantity: quantity
+          }
+        }
+      });
+    } catch (error) {
+      alert(error || 'Failed to process buy now');
     }
   };
 
@@ -148,42 +177,60 @@ const ProductDetail = () => {
             </div>
           )}
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-            <div className="flex items-center space-x-2">
+          {user?.role !== 'admin' && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="p-2 border rounded hover:bg-gray-50"
+                >
+                  -
+                </button>
+                <span className="px-4 py-2 border rounded">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(Math.min(product.inventory, quantity + 1))}
+                  className="p-2 border rounded hover:bg-gray-50"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">{product.inventory} items available</p>
+            </div>
+          )}
+          
+          {user?.role === 'admin' && (
+            <div className="mb-6">
+              <p className="text-sm text-gray-500">{product.inventory} items available in inventory</p>
+            </div>
+          )}
+
+          {user?.role !== 'admin' && (
+            <div className="space-y-3">
               <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="p-2 border rounded hover:bg-gray-50"
+                onClick={handleAddToCart}
+                disabled={product.inventory === 0}
+                className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                -
+                {product.inventory === 0 ? 'Out of Stock' : 'Add to Cart'}
               </button>
-              <span className="px-4 py-2 border rounded">{quantity}</span>
               <button
-                onClick={() => setQuantity(Math.min(product.inventory, quantity + 1))}
-                className="p-2 border rounded hover:bg-gray-50"
+                onClick={handleBuyNow}
+                disabled={product.inventory === 0}
+                className="w-full bg-gray-900 text-white py-3 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                +
+                Buy Now
               </button>
             </div>
-            <p className="text-sm text-gray-500 mt-1">{product.inventory} items available</p>
-          </div>
-
-          <div className="space-y-3">
-            <button
-              onClick={handleAddToCart}
-              disabled={product.inventory === 0}
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {product.inventory === 0 ? 'Out of Stock' : 'Add to Cart'}
-            </button>
-            <button
-              onClick={handleBuyNow}
-              disabled={product.inventory === 0}
-              className="w-full bg-gray-900 text-white py-3 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Buy Now
-            </button>
-          </div>
+          )}
+          
+          {user?.role === 'admin' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-blue-800 text-sm font-medium">
+                Admin Preview Mode - Purchase options are disabled for administrators
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

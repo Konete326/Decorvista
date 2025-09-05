@@ -29,17 +29,18 @@ const orderSchema = new mongoose.Schema({
       type: Number,
       min: 0
     },
-    priceAt: {
+    price: {
       type: Number
     }
   }],
   shippingAddress: {
     name: { type: String, required: true },
     phone: { type: String, required: true },
-    address: { type: String, required: true },
+    street: { type: String, required: true },
     city: { type: String, required: true },
     state: { type: String, required: true },
-    zipCode: { type: String, required: true }
+    zipCode: { type: String, required: true },
+    country: { type: String, required: true }
   },
   paymentMethod: {
     type: String,
@@ -67,6 +68,13 @@ const orderSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Add indexes for frequently queried fields
+orderSchema.index({ user: 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ 'items.product': 1 });
+orderSchema.index({ 'items.consultation.designer': 1 });
 
 orderSchema.pre('save', function(next) {
   this.total = this.subtotal + this.shipping;

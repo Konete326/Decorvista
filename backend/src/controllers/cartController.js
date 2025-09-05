@@ -71,9 +71,9 @@ const addToCart = async (req, res, next) => {
   }
 };
 
-const updateCart = async (req, res, next) => {
+const removeFromCart = async (req, res, next) => {
   try {
-    const { items } = req.body;
+    const { productId } = req.params;
 
     let cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
@@ -83,24 +83,62 @@ const updateCart = async (req, res, next) => {
       });
     }
 
-    for (const item of items) {
-      if (item.quantity === 0) {
-        cart.items = cart.items.filter(i => 
-          i.product.toString() !== item.productId
-        );
-      } else {
-        const cartItem = cart.items.find(i => 
-          i.product.toString() === item.productId
-        );
-        if (cartItem) {
-          const product = await Product.findById(item.productId);
-          if (product && product.inventory >= item.quantity) {
-            cartItem.quantity = item.quantity;
-            cartItem.priceAt = product.price;
-          }
-        }
-      }
+    cart.items = cart.items.filter(item => 
+      item.product.toString() !== productId
+    );
+
+    await cart.save();
+    await cart.populate('items.product', 'title price images inventory');
+
+    res.json({
+      success: true,
+      data: cart
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateCart = async (req, res, next) => {
+  try {
+    const { productId, quantity } = req.body;
+
+    let cart = await Cart.findOne({ user: req.user.id });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart not found'
+      });
     }
+
+    const cartItem = cart.items.find(item => 
+      item.product.toString() === productId
+    );
+
+    if (!cartItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found in cart'
+      });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    if (product.inventory < quantity) {
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient inventory'
+      });
+    }
+
+    cartItem.quantity = quantity;
+    cartItem.priceAt = product.price;
 
     await cart.save();
     await cart.populate('items.product', 'title price images inventory');
@@ -159,15 +197,15 @@ const validateAddToCart = [
 ];
 
 const validateUpdateCart = [
-  body('items').isArray().withMessage('Items must be an array'),
-  body('items.*.productId').isMongoId().withMessage('Valid product ID is required'),
-  body('items.*.quantity').isInt({ min: 0 }).withMessage('Quantity must be non-negative')
+  body('productId').isMongoId().withMessage('Valid product ID is required'),
+  body('quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1')
 ];
 
 module.exports = {
   getCart,
   addToCart,
   updateCart,
+  removeFromCart,
   checkout,
   validateAddToCart,
   validateUpdateCart

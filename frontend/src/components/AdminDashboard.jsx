@@ -3,9 +3,16 @@ import { adminAPI } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import AdminCategoryManagement from './AdminCategoryManagement';
 import AdminDesignerManagement from './AdminDesignerManagement';
+import AdminOrderManagement from './AdminOrderManagement';
 
 const AdminDashboard = () => {
   const [reports, setReports] = useState(null);
+  const [metrics, setMetrics] = useState({
+    totalUsers: 0,
+    totalProducts: 0,
+    activeDesigners: 0,
+    totalOrders: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,7 +22,14 @@ const AdminDashboard = () => {
   const fetchReports = async () => {
     try {
       const response = await adminAPI.getReports();
-      setReports(response.data.data);
+      const data = response.data.data;
+      setReports(data);
+      setMetrics({
+        totalUsers: data?.users?.total ?? 0,
+        totalProducts: data?.products ?? 0,
+        activeDesigners: data?.designers ?? 0,
+        totalOrders: data?.orders ?? 0,
+      });
     } catch (error) {
       console.error('Failed to fetch reports:', error);
     } finally {
@@ -46,7 +60,7 @@ const AdminDashboard = () => {
             </div>
             <div className="ml-5">
               <p className="text-gray-500 text-sm">Total Users</p>
-              <p className="text-2xl font-semibold text-gray-900">{reports?.totalUsers || 0}</p>
+              <p className="text-2xl font-semibold text-gray-900">{metrics.totalUsers}</p>
             </div>
           </div>
         </div>
@@ -60,7 +74,7 @@ const AdminDashboard = () => {
             </div>
             <div className="ml-5">
               <p className="text-gray-500 text-sm">Total Products</p>
-              <p className="text-2xl font-semibold text-gray-900">{reports?.totalProducts || 0}</p>
+              <p className="text-2xl font-semibold text-gray-900">{metrics.totalProducts}</p>
             </div>
           </div>
         </div>
@@ -74,7 +88,7 @@ const AdminDashboard = () => {
             </div>
             <div className="ml-5">
               <p className="text-gray-500 text-sm">Active Designers</p>
-              <p className="text-2xl font-semibold text-gray-900">{reports?.activeDesigners || 0}</p>
+              <p className="text-2xl font-semibold text-gray-900">{metrics.activeDesigners}</p>
             </div>
           </div>
         </div>
@@ -83,12 +97,12 @@ const AdminDashboard = () => {
           <div className="flex items-center">
             <div className="flex-shrink-0 bg-yellow-500 rounded-md p-3">
               <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2H9z" />
               </svg>
             </div>
             <div className="ml-5">
-              <p className="text-gray-500 text-sm">Pending Consultations</p>
-              <p className="text-2xl font-semibold text-gray-900">{reports?.pendingConsultations || 0}</p>
+              <p className="text-gray-500 text-sm">Total Orders</p>
+              <p className="text-2xl font-semibold text-gray-900">{metrics.totalOrders}</p>
             </div>
           </div>
         </div>
@@ -111,6 +125,14 @@ const AdminDashboard = () => {
           </ResponsiveContainer>
         </div>
       )}
+
+      {/* Order Management Section */}
+      <div className="mt-8">
+        <div className="bg-white rounded-lg border border-neutral-200 p-6 shadow-soft">
+          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Order Management</h3>
+          <AdminOrderManagement />
+        </div>
+      </div>
 
       {/* Management Sections */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">

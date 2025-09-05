@@ -15,7 +15,7 @@ const { handleValidationErrors } = require('../middleware/validation');
 router.get('/', getDesigners);
 router.get('/me', protect, getMyDesignerProfile);
 router.get('/:id', getDesigner);
-router.post('/', protect, authorize('designer', 'admin'), validateCreateDesigner, handleValidationErrors, createDesigner);
+router.post('/', protect, createDesigner);
 router.put('/:id', protect, validateUpdateDesigner, handleValidationErrors, updateDesigner);
 
 module.exports = router;

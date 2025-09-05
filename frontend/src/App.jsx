@@ -1,49 +1,51 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { CartProvider } from './context/CartContext';
-import { ConsultationProvider } from './context/ConsultationContext';
+import React, { Suspense, useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
+import SkipLink from './components/ui/SkipLink';
+import LazyWrapper from './components/ui/LazyWrapper';
+import ErrorBoundary from './components/ErrorBoundary';
+import { useSocket } from './hooks/useSocket';
+import { loadUser } from './store/slices/authSlice';
 
-// Pages
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Products from './pages/Products';
-import ProductDetail from './pages/ProductDetail';
-import Gallery from './pages/Gallery';
-import Designers from './pages/Designers';
-import DesignerProfile from './pages/DesignerProfile';
-import BookConsultation from './pages/BookConsultation';
-import CompleteProfile from './pages/CompleteProfile';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import AdminProducts from './pages/AdminProducts';
-import Dashboard from './pages/Dashboard';
-import Favorites from './pages/Favorites';
+// Lazy loaded components for code splitting
+import * as LazyComponents from './utils/lazyComponents';
 
 function App() {
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  
+  // Initialize user authentication on app load
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token && !isAuthenticated) {
+      dispatch(loadUser());
+    }
+  }, [dispatch, isAuthenticated]);
+  
+  // Initialize socket connection
+  useSocket();
+
   return (
-    <Router>
-      <AuthProvider>
-        <CartProvider>
-          <ConsultationProvider>
-            <Routes>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-neutral-50">
+        <SkipLink />
+        <Routes>
               <Route path="/" element={<MainLayout />}>
-                <Route index element={<Home />} />
-                <Route path="login" element={<Login />} />
-                <Route path="register" element={<Register />} />
-                <Route path="products" element={<Products />} />
-                <Route path="products/:id" element={<ProductDetail />} />
-                <Route path="gallery" element={<Gallery />} />
-                <Route path="designers" element={<Designers />} />
-                <Route path="designers/:id" element={<DesignerProfile />} />
+                <Route index element={<LazyWrapper><LazyComponents.Home /></LazyWrapper>} />
+                <Route path="login" element={<LazyWrapper><LazyComponents.Login /></LazyWrapper>} />
+                <Route path="register" element={<LazyWrapper><LazyComponents.Register /></LazyWrapper>} />
+                <Route path="products" element={<LazyWrapper><LazyComponents.Products /></LazyWrapper>} />
+                <Route path="products/:id" element={<LazyWrapper><LazyComponents.ProductDetail /></LazyWrapper>} />
+                <Route path="gallery" element={<LazyWrapper><LazyComponents.Gallery /></LazyWrapper>} />
+                <Route path="designers" element={<LazyWrapper><LazyComponents.Designers /></LazyWrapper>} />
+                <Route path="designers/:id" element={<LazyWrapper><LazyComponents.DesignerProfile /></LazyWrapper>} />
                 <Route 
                   path="cart" 
                   element={
                     <ProtectedRoute>
-                      <Cart />
+                      <LazyWrapper><LazyComponents.Cart /></LazyWrapper>
                     </ProtectedRoute>
                   } 
                 />
@@ -51,7 +53,7 @@ function App() {
                   path="dashboard" 
                   element={
                     <ProtectedRoute>
-                      <Dashboard />
+                      <LazyWrapper><LazyComponents.Dashboard /></LazyWrapper>
                     </ProtectedRoute>
                   } 
                 />
@@ -59,7 +61,7 @@ function App() {
                   path="admin" 
                   element={
                     <ProtectedRoute roles={['admin']}>
-                      <Dashboard />
+                      <LazyWrapper><LazyComponents.AdvancedAdminPanel /></LazyWrapper>
                     </ProtectedRoute>
                   } 
                 />
@@ -67,7 +69,7 @@ function App() {
                   path="complete-profile" 
                   element={
                     <ProtectedRoute roles={['designer']}>
-                      <CompleteProfile />
+                      <LazyWrapper><LazyComponents.CompleteProfile /></LazyWrapper>
                     </ProtectedRoute>
                   } 
                 />
@@ -75,7 +77,7 @@ function App() {
                   path="book-consultation/:designerId" 
                   element={
                     <ProtectedRoute>
-                      <BookConsultation />
+                      <LazyWrapper><LazyComponents.BookConsultation /></LazyWrapper>
                     </ProtectedRoute>
                   } 
                 />
@@ -83,7 +85,7 @@ function App() {
                   path="checkout" 
                   element={
                     <ProtectedRoute>
-                      <Checkout />
+                      <LazyWrapper><LazyComponents.Checkout /></LazyWrapper>
                     </ProtectedRoute>
                   } 
                 />
@@ -91,7 +93,7 @@ function App() {
                   path="admin/products" 
                   element={
                     <ProtectedRoute roles={['admin']}>
-                      <AdminProducts />
+                      <LazyWrapper><LazyComponents.AdminProducts /></LazyWrapper>
                     </ProtectedRoute>
                   } 
                 />
@@ -99,16 +101,22 @@ function App() {
                   path="favorites" 
                   element={
                     <ProtectedRoute>
-                      <Favorites />
+                      <LazyWrapper><LazyComponents.Favorites /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="thank-you" 
+                  element={
+                    <ProtectedRoute>
+                      <LazyWrapper><LazyComponents.ThankYou /></LazyWrapper>
                     </ProtectedRoute>
                   } 
                 />
               </Route>
-            </Routes>
-          </ConsultationProvider>
-        </CartProvider>
-      </AuthProvider>
-    </Router>
+        </Routes>
+      </div>
+    </ErrorBoundary>
   );
 }
 

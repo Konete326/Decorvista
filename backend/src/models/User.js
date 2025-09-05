@@ -34,12 +34,19 @@ const userSchema = new mongoose.Schema({
   },
   avatarUrl: {
     type: String
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true
 });
 
-userSchema.index({ email: 1 });
+// Add indexes for frequently queried fields
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ role: 1 });
+userSchema.index({ createdAt: -1 });
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.passwordHash);

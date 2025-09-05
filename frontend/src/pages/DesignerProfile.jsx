@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { designerAPI, reviewAPI } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
 
 const DesignerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [designer, setDesigner] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);

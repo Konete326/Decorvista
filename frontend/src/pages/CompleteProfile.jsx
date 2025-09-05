@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { designerAPI, uploadAPI } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useSelector, useDispatch } from 'react-redux';
 
 const CompleteProfile = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     professionalTitle: '',
     bio: '',
@@ -17,6 +18,23 @@ const CompleteProfile = () => {
   const [portfolioFiles, setPortfolioFiles] = useState([]);
   const [availability, setAvailability] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // If a designer profile already exists, redirect instead of creating again
+  useEffect(() => {
+    const checkExistingProfile = async () => {
+      try {
+        const res = await designerAPI.getMe();
+        const existing = res?.data?.data;
+        if (existing?._id) {
+          alert('A designer profile already exists for your account. Redirecting to dashboard.');
+          navigate('/dashboard');
+        }
+      } catch (err) {
+        // Ignore 404 (no profile yet). Any other error will be handled on create.
+      }
+    };
+    checkExistingProfile();
+  }, [navigate]);
 
   const specialtyOptions = ['Modern', 'Traditional', 'Minimalist', 'Industrial', 'Scandinavian', 'Bohemian', 'Contemporary'];
 
@@ -71,25 +89,58 @@ const CompleteProfile = () => {
     setLoading(true);
 
     try {
+      // Client-side validation to avoid server 400s
+      const errors = [];
+      if (!formData.professionalTitle?.trim()) errors.push('Professional title is required');
+      if (!formData.location?.trim()) errors.push('Location is required');
+      if (!formData.bio || formData.bio.trim().length < 10) errors.push('Bio must be at least 10 characters');
+      const rate = parseFloat(formData.hourlyRate);
+      if (isNaN(rate) || rate < 0) errors.push('Hourly rate must be a non-negative number');
+
+      if (errors.length > 0) {
+        alert(errors[0]);
+        setLoading(false);
+        return;
+      }
+
       let portfolioImages = [];
       
       if (portfolioFiles.length > 0) {
         const uploadResponse = await uploadAPI.multiple(portfolioFiles);
-        portfolioImages = uploadResponse.data.data.map(url => ({ image: url, caption: '' }));
+        const uploaded = uploadResponse.data.data || [];
+        // Normalize to { url, caption } objects expected by backend
+        portfolioImages = uploaded.map((item) => ({ url: (item?.url ?? item), caption: '' }));
       }
 
       const profileData = {
-        ...formData,
-        hourlyRate: parseFloat(formData.hourlyRate),
+        bio: formData.bio,
+        specialties: formData.specialties,
+        location: formData.location,
+        professionalTitle: formData.professionalTitle,
+        hourlyRate: parseFloat(formData.hourlyRate) || 0,
         portfolio: portfolioImages,
-        availability: availability.filter(slot => slot.date && slot.slots.some(s => s))
+        availabilitySlots: availability
+          .filter(slot => slot.date && slot.slots.some(s => s))
+          .flatMap(slot => 
+            slot.slots
+              .filter(time => time)
+              .map(time => ({
+                date: new Date(slot.date),
+                from: time,
+                to: time,
+                status: 'available'
+              }))
+          )
       };
 
       await designerAPI.create(profileData);
       alert('Profile completed successfully!');
       navigate('/dashboard');
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to create profile');
+      const msg = error?.response?.data?.errors?.[0]?.msg
+        || error?.response?.data?.message
+        || 'Failed to create profile';
+      alert(msg);
     } finally {
       setLoading(false);
     }

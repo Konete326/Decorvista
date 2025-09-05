@@ -1,24 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-import { useConsultation } from '../context/ConsultationContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { clearCart } from '../store/slices/cartSlice';
 import { orderAPI } from '../services/api';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart, getCartTotal } = useCart();
-  const { user } = useAuth();
-  const { consultations } = useConsultation();
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const { items: cart } = useSelector((state) => state.cart);
+  
+  // Check if this is a direct buy from product detail
+  const { directBuy, product: directBuyProduct } = location.state || {};
+  
+  const getCartTotal = () => {
+    if (directBuy && directBuyProduct) {
+      return directBuyProduct.price * directBuyProduct.quantity;
+    }
+    return cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+  };
+  
+  const getOrderItems = () => {
+    if (directBuy && directBuyProduct) {
+      return [{
+        product: directBuyProduct,
+        quantity: directBuyProduct.quantity,
+        priceAt: directBuyProduct.price
+      }];
+    }
+    return cart;
+  };
+  
+  const { user } = useSelector((state) => state.auth);
+  const consultations = []; // Remove consultation dependency for now
   const [loading, setLoading] = useState(false);
   const [selectedConsultations, setSelectedConsultations] = useState([]);
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    name: '',
     phone: '',
     address: '',
     city: '',
     state: '',
     zipCode: '',
+    country: 'United States',
     paymentMethod: 'cash_on_delivery',
     notes: ''
   });
@@ -43,13 +67,19 @@ const Checkout = () => {
       }));
 
       const orderData = {
+        items: getOrderItems().map(item => ({
+          product: item.product._id || item.product.id,
+          quantity: item.quantity,
+          priceAt: item.priceAt || item.product.price
+        })),
         shippingAddress: {
           name: formData.name,
           phone: formData.phone,
-          address: formData.address,
+          street: formData.address,
           city: formData.city,
           state: formData.state,
-          zipCode: formData.zipCode
+          zipCode: formData.zipCode,
+          country: formData.country
         },
         paymentMethod: formData.paymentMethod,
         notes: formData.notes,
@@ -57,8 +87,19 @@ const Checkout = () => {
       };
 
       const response = await orderAPI.create(orderData);
-      alert('Order placed successfully!');
-      navigate('/dashboard');
+      
+      // Clear cart after successful order (only if not direct buy)
+      if (!directBuy) {
+        dispatch(clearCart());
+      }
+      
+      // Navigate to thank you page with order details
+      navigate('/thank-you', {
+        state: {
+          orderId: response.data.data._id,
+          orderTotal: total.toFixed(2)
+        }
+      });
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to place order');
     } finally {
@@ -73,7 +114,23 @@ const Checkout = () => {
   const shipping = subtotal > 100 ? 0 : 10;
   const total = subtotal + shipping;
 
-  if (cart.items.length === 0 && (!consultations || consultations.filter(c => c.status === 'pending').length === 0)) {
+  // Restrict admin from placing orders
+  if (user?.role === 'admin') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Restricted</h1>
+        <p className="text-gray-600 mb-4">Admins cannot place orders. Only users and designers can make purchases.</p>
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700"
+        >
+          Go to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  if (!directBuy && cart.length === 0 && (!consultations || consultations.filter(c => c.status === 'pending').length === 0)) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
@@ -171,6 +228,25 @@ const Checkout = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                  <select
+                    name="country"
+                    required
+                    value={formData.country}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="United States">United States</option>
+                    <option value="Canada">Canada</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Germany">Germany</option>
+                    <option value="France">France</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -265,8 +341,8 @@ const Checkout = () => {
             <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
             
             <div className="space-y-3 mb-4">
-              {cart.items.map(item => (
-                <div key={item.product._id} className="flex items-center justify-between">
+              {getOrderItems().map(item => (
+                <div key={item.product._id || item.product.id} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <img
                       src={item.product.images?.[0] || '/api/placeholder/60/60'}

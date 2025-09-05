@@ -1,11 +1,15 @@
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
 import HomeownerDashboard from '../components/HomeownerDashboard';
 import DesignerDashboard from '../components/DesignerDashboard';
 import AdminDashboard from '../components/AdminDashboard';
 
 const Dashboard = () => {
-  const { user, isAdmin, isDesigner, isHomeowner } = useAuth();
+  const { user } = useSelector((state) => state.auth);
+  
+  const isAdmin = user?.role === 'admin';
+  const isDesigner = user?.role === 'designer';
+  const isHomeowner = user?.role === 'homeowner';
 
   if (isAdmin) {
     return <AdminDashboard />;

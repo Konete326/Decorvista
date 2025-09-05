@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { consultationAPI } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
 
 const BookConsultation = () => {
   const { designerId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
   
   const { designer, selectedDate, selectedSlot, notes } = location.state || {};
   

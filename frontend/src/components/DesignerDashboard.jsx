@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { consultationAPI, reviewAPI, designerAPI, uploadAPI } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
 
 const DesignerDashboard = () => {
-  const { user } = useAuth();
+  const { user } = useSelector((state) => state.auth);
   const [consultations, setConsultations] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [designerProfile, setDesignerProfile] = useState(null);

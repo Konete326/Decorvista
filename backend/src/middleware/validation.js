@@ -29,6 +29,10 @@ const validateOrder = [
   body('shippingAddress.state').notEmpty().withMessage('State is required'),
   body('shippingAddress.zipCode').notEmpty().withMessage('Zip code is required'),
   body('paymentMethod').optional().isIn(['cash_on_delivery', 'credit_card', 'bank_transfer']),
+  body('items').optional().isArray().withMessage('Items must be an array'),
+  body('items.*.product').optional().isMongoId().withMessage('Valid product ID required'),
+  body('items.*.quantity').optional().isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
+  body('items.*.priceAt').optional().isFloat({ min: 0 }).withMessage('Price must be positive'),
   handleValidationErrors
 ];
 

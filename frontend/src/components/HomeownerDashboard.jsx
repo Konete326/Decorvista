@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { consultationAPI, productAPI, orderAPI, favoriteAPI } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
+import { useSelector } from 'react-redux';
 
 const HomeownerDashboard = () => {
-  const { user } = useAuth();
-  const { cart } = useCart();
+  const { user } = useSelector((state) => state.auth);
+  const { items: cart } = useSelector((state) => state.cart);
   const [consultations, setConsultations] = useState([]);
   const [orders, setOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { registerUser } from '../store/slices/authSlice';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -11,9 +12,9 @@ const Register = () => {
     role: 'homeowner'
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   
-  const { register } = useAuth();
+  const dispatch = useDispatch();
+  const { loading } = useSelector((state) => state.auth);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -37,19 +38,17 @@ const Register = () => {
       return;
     }
 
-    setLoading(true);
-    const result = await register({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role
-    });
-    
-    if (result.success) {
+    try {
+      const result = await dispatch(registerUser({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      })).unwrap();
+      
       navigate('/dashboard');
-    } else {
-      setError(result.error || 'Registration failed');
-      setLoading(false);
+    } catch (error) {
+      setError(error.message || 'Registration failed');
     }
   };
 

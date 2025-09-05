@@ -59,6 +59,19 @@ const designerSchema = new mongoose.Schema({
   profileCompleted: {
     type: Boolean,
     default: false
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  professionalTitle: {
+    type: String,
+    trim: true
+  },
+  hourlyRate: {
+    type: Number,
+    min: 0
   }
 }, {
   timestamps: true

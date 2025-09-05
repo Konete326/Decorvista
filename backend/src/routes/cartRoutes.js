@@ -4,6 +4,7 @@ const {
   getCart,
   addToCart,
   updateCart,
+  removeFromCart,
   checkout,
   validateAddToCart,
   validateUpdateCart
@@ -14,6 +15,7 @@ const { handleValidationErrors } = require('../middleware/validation');
 router.get('/', protect, getCart);
 router.post('/', protect, validateAddToCart, handleValidationErrors, addToCart);
 router.put('/', protect, validateUpdateCart, handleValidationErrors, updateCart);
+router.delete('/remove/:productId', protect, removeFromCart);
 router.post('/checkout', protect, checkout);
 
 module.exports = router;
