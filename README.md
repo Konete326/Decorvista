@@ -229,4 +229,4 @@ This project is licensed under the MIT License.
 
 ## Support
 
-For support, email info@decorvista.com or open an issue in the repository.
+For support, email sameerdevexpertgmail.com or open an issue in the repository.
