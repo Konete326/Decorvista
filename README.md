@@ -404,6 +404,14 @@ For technical support, please include:
 3. Error messages (full stack trace)
 4. Steps to reproduce the issue
 
+## Quick Commands
+
+```bash
+# Create admin account
 node src/seed.js
 
-node test-admin.js for admin login
+# Test admin login
+node test-admin.js
+```
+
+For support, email sameerdevexpert@gmail.com or open an issue in the repository.
