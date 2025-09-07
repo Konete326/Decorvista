@@ -11,6 +11,8 @@ import { loadUser } from './store/slices/authSlice';
 
 // Lazy loaded components for code splitting
 import * as LazyComponents from './utils/lazyComponents';
+import UserProfile from './pages/UserProfile';
+import CompleteUserProfile from './pages/CompleteUserProfile';
 
 function App() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -19,10 +21,10 @@ function App() {
   // Initialize user authentication on app load
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token && !isAuthenticated) {
+    if (token) {
       dispatch(loadUser());
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch]);
   
   // Initialize socket connection
   useSocket();
@@ -41,6 +43,34 @@ function App() {
                 <Route path="gallery" element={<LazyWrapper><LazyComponents.Gallery /></LazyWrapper>} />
                 <Route path="designers" element={<LazyWrapper><LazyComponents.Designers /></LazyWrapper>} />
                 <Route path="designers/:id" element={<LazyWrapper><LazyComponents.DesignerProfile /></LazyWrapper>} />
+                <Route path="contact" element={<LazyWrapper><LazyComponents.Contact /></LazyWrapper>} />
+                <Route path="about" element={<LazyWrapper><LazyComponents.About /></LazyWrapper>} />
+                
+                {/* User Activity Routes */}
+                <Route 
+                  path="my-activity" 
+                  element={
+                    <ProtectedRoute>
+                      <LazyWrapper><LazyComponents.MyActivity /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="my-reviews" 
+                  element={
+                    <ProtectedRoute>
+                      <LazyWrapper><LazyComponents.MyReviews /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="my-gallery" 
+                  element={
+                    <ProtectedRoute>
+                      <LazyWrapper><LazyComponents.MyGallery /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
                 <Route 
                   path="cart" 
                   element={
@@ -58,10 +88,26 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="homeowner/dashboard" 
+                  element={
+                    <ProtectedRoute roles={['homeowner']}>
+                      <LazyWrapper><LazyComponents.Dashboard /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="admin" 
                   element={
                     <ProtectedRoute roles={['admin']}>
                       <LazyWrapper><LazyComponents.AdvancedAdminPanel /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="consultations" 
+                  element={
+                    <ProtectedRoute roles={['designer']}>
+                      <LazyWrapper><LazyComponents.ConsultationManagement /></LazyWrapper>
                     </ProtectedRoute>
                   } 
                 />
@@ -72,6 +118,42 @@ function App() {
                       <LazyWrapper><LazyComponents.CompleteProfile /></LazyWrapper>
                     </ProtectedRoute>
                   } 
+                />
+                <Route 
+                  path="complete-user-profile" 
+                  element={
+                    <ProtectedRoute roles={['homeowner']}>
+                      <CompleteUserProfile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="designer-dashboard" 
+                  element={
+                    <ProtectedRoute roles={['designer']}>
+                      <LazyWrapper><LazyComponents.DesignerDashboard /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="designer/dashboard" 
+                  element={
+                    <ProtectedRoute roles={['designer']}>
+                      <LazyWrapper><LazyComponents.DesignerDashboard /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="profile" 
+                  element={
+                    <ProtectedRoute>
+                      <UserProfile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="user/:userId" 
+                  element={<UserProfile />} 
                 />
                 <Route 
                   path="book-consultation/:designerId" 
@@ -98,6 +180,22 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="admin/contacts" 
+                  element={
+                    <ProtectedRoute roles={['admin']}>
+                      <LazyWrapper><LazyComponents.AdminContactManagement /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="admin/add-gallery" 
+                  element={
+                    <ProtectedRoute roles={['admin']}>
+                      <LazyWrapper><LazyComponents.AddGalleryItem /></LazyWrapper>
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="favorites" 
                   element={
                     <ProtectedRoute>
@@ -112,6 +210,14 @@ function App() {
                       <LazyWrapper><LazyComponents.ThankYou /></LazyWrapper>
                     </ProtectedRoute>
                   } 
+                />
+                <Route 
+                  path="404" 
+                  element={<LazyWrapper><LazyComponents.NotFound /></LazyWrapper>} 
+                />
+                <Route 
+                  path="*" 
+                  element={<LazyWrapper><LazyComponents.NotFound /></LazyWrapper>} 
                 />
               </Route>
         </Routes>

@@ -84,10 +84,22 @@ const AdminDesignerManagement = () => {
               <div key={designer._id} className="border rounded-lg p-4">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                      <span className="text-indigo-600 font-bold">
-                        {designer.user?.name?.charAt(0) || 'D'}
-                      </span>
+                    <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center overflow-hidden">
+                      {designer.user?.avatarUrl ? (
+                        <img
+                          src={`http://localhost:5000${designer.user.avatarUrl}`}
+                          alt={designer.user?.name || 'Designer'}
+                          className="w-12 h-12 rounded-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = `<span class="text-indigo-600 font-bold">${designer.user?.name?.charAt(0) || 'D'}</span>`;
+                          }}
+                        />
+                      ) : (
+                        <span className="text-indigo-600 font-bold">
+                          {designer.user?.name?.charAt(0) || 'D'}
+                        </span>
+                      )}
                     </div>
                     <div>
                       <h3 className="font-medium">{designer.user?.name}</h3>

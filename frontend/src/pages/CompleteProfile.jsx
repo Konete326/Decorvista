@@ -16,25 +16,64 @@ const CompleteProfile = () => {
     phone: ''
   });
   const [portfolioFiles, setPortfolioFiles] = useState([]);
+  const [existingPortfolio, setExistingPortfolio] = useState([]);
   const [availability, setAvailability] = useState([]);
+  const [profileImage, setProfileImage] = useState(null);
+  const [existingProfileImage, setExistingProfileImage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // If a designer profile already exists, redirect instead of creating again
+  // Load existing designer profile for editing
   useEffect(() => {
-    const checkExistingProfile = async () => {
+    const loadExistingProfile = async () => {
       try {
         const res = await designerAPI.getMe();
         const existing = res?.data?.data;
+        console.log('Existing designer data:', existing); // Debug log
         if (existing?._id) {
-          alert('A designer profile already exists for your account. Redirecting to dashboard.');
-          navigate('/dashboard');
+          console.log('Phone from designer:', existing.phone);
+          console.log('Phone from user:', existing.user?.phone);
+          
+          const phoneValue = existing.phone || existing.user?.phone || '';
+          console.log('Final phone value:', phoneValue);
+          
+          setFormData({
+            professionalTitle: existing.professionalTitle || '',
+            bio: existing.bio || '',
+            specialties: existing.specialties || [],
+            location: existing.location || '',
+            hourlyRate: existing.hourlyRate || '',
+            phone: phoneValue
+          });
+          
+          // Set existing profile image
+          setExistingProfileImage(existing.user?.avatarUrl || '');
+          console.log('Setting existing profile image:', existing.user?.avatarUrl);
+          
+          // Convert availabilitySlots to availability format for the form
+          const existingSlots = existing.availabilitySlots || [];
+          const groupedAvailability = existingSlots.reduce((acc, slot) => {
+            const dateStr = new Date(slot.date).toISOString().split('T')[0];
+            if (!acc[dateStr]) {
+              acc[dateStr] = { date: dateStr, slots: [] };
+            }
+            acc[dateStr].slots.push(slot.from);
+            return acc;
+          }, {});
+          
+          setAvailability(Object.values(groupedAvailability));
+          
+          // Set existing portfolio images
+          if (existing.portfolio && existing.portfolio.length > 0) {
+            setExistingPortfolio(existing.portfolio);
+          }
         }
       } catch (err) {
-        // Ignore 404 (no profile yet). Any other error will be handled on create.
+        console.log('Error loading profile:', err);
+        // No existing profile, continue with empty form
       }
     };
-    checkExistingProfile();
-  }, [navigate]);
+    loadExistingProfile();
+  }, []);
 
   const specialtyOptions = ['Modern', 'Traditional', 'Minimalist', 'Industrial', 'Scandinavian', 'Bohemian', 'Contemporary'];
 
@@ -55,7 +94,14 @@ const CompleteProfile = () => {
   };
 
   const handlePortfolioChange = (e) => {
-    setPortfolioFiles(Array.from(e.target.files));
+    setPortfolioFiles([...e.target.files]);
+  };
+
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+    }
   };
 
   const addAvailabilitySlot = () => {
@@ -78,6 +124,12 @@ const CompleteProfile = () => {
     const updated = [...availability];
     updated[dateIndex].slots.push('');
     setAvailability(updated);
+  };
+
+  const removeExistingImage = (index) => {
+    const updated = [...existingPortfolio];
+    updated.splice(index, 1);
+    setExistingPortfolio(updated);
   };
 
   const removeAvailabilitySlot = (index) => {
@@ -104,6 +156,13 @@ const CompleteProfile = () => {
       }
 
       let portfolioImages = [];
+      let profileImageUrl = '';
+      
+      // Upload profile image if provided
+      if (profileImage) {
+        const profileUploadResponse = await uploadAPI.single(profileImage);
+        profileImageUrl = profileUploadResponse.data.data?.url || profileUploadResponse.data.data;
+      }
       
       if (portfolioFiles.length > 0) {
         const uploadResponse = await uploadAPI.multiple(portfolioFiles);
@@ -118,7 +177,9 @@ const CompleteProfile = () => {
         location: formData.location,
         professionalTitle: formData.professionalTitle,
         hourlyRate: parseFloat(formData.hourlyRate) || 0,
-        portfolio: portfolioImages,
+        portfolio: [...existingPortfolio, ...portfolioImages],
+        phone: formData.phone,
+        profileImage: profileImageUrl,
         availabilitySlots: availability
           .filter(slot => slot.date && slot.slots.some(s => s))
           .flatMap(slot => 
@@ -133,8 +194,23 @@ const CompleteProfile = () => {
           )
       };
 
-      await designerAPI.create(profileData);
-      alert('Profile completed successfully!');
+      // Check if profile exists to determine create vs update
+      try {
+        const existingRes = await designerAPI.getMe();
+        if (existingRes?.data?.data?._id) {
+          // Update existing profile
+          await designerAPI.update(existingRes.data.data._id, profileData);
+          alert('Profile updated successfully!');
+        } else {
+          // Create new profile
+          await designerAPI.create(profileData);
+          alert('Profile created successfully!');
+        }
+      } catch (checkError) {
+        // If getMe fails, assume no profile exists and create
+        await designerAPI.create(profileData);
+        alert('Profile created successfully!');
+      }
       navigate('/dashboard');
     } catch (error) {
       const msg = error?.response?.data?.errors?.[0]?.msg
@@ -148,11 +224,66 @@ const CompleteProfile = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Complete Your Designer Profile</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">
+        {formData.professionalTitle ? 'Update Your Designer Profile' : 'Complete Your Designer Profile'}
+      </h1>
       
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
+          
+          {/* Profile Image Section */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+            <div className="flex items-center space-x-4">
+              {(existingProfileImage || profileImage) ? (
+                <div className="relative">
+                  <img
+                    src={profileImage ? URL.createObjectURL(profileImage) : existingProfileImage}
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                    onError={(e) => {
+                      console.log('Image load error:', e.target.src);
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileImage(null);
+                      setExistingProfileImage('');
+                    }}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+              )}
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfileImageChange}
+                  className="hidden"
+                  id="profile-image-upload"
+                />
+                <label
+                  htmlFor="profile-image-upload"
+                  className="cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+                >
+                  {existingProfileImage || profileImage ? 'Change Image' : 'Upload Image'}
+                </label>
+                <p className="text-sm text-gray-500 mt-1">JPG, PNG up to 5MB</p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Professional Title</label>
@@ -238,6 +369,35 @@ const CompleteProfile = () => {
 
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Portfolio Images</h2>
+          
+          {/* Display existing portfolio images */}
+          {existingPortfolio.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Current Portfolio Images:</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                {existingPortfolio.map((item, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={item.url}
+                      alt={item.caption || `Portfolio ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      ×
+                    </button>
+                    {item.caption && (
+                      <p className="text-xs text-gray-600 mt-1 truncate">{item.caption}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <input
             type="file"
             multiple
@@ -245,7 +405,12 @@ const CompleteProfile = () => {
             onChange={handlePortfolioChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
-          <p className="text-sm text-gray-500 mt-2">Upload up to 10 images showcasing your best work</p>
+          <p className="text-sm text-gray-500 mt-2">
+            {existingPortfolio.length > 0 
+              ? `You have ${existingPortfolio.length} existing images. Upload additional images or replace existing ones.`
+              : 'Upload up to 10 images showcasing your best work'
+            }
+          </p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
@@ -312,7 +477,7 @@ const CompleteProfile = () => {
             disabled={loading}
             className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? 'Saving...' : 'Complete Profile'}
+            {loading ? 'Saving...' : (formData.professionalTitle ? 'Update Profile' : 'Complete Profile')}
           </button>
         </div>
       </form>

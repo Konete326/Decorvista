@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
+import { Navigate } from 'react-router-dom';
 import HomeownerDashboard from '../components/HomeownerDashboard';
-import DesignerDashboard from '../components/DesignerDashboard';
 import AdminDashboard from '../components/AdminDashboard';
 
 const Dashboard = () => {
@@ -16,7 +16,7 @@ const Dashboard = () => {
   }
 
   if (isDesigner) {
-    return <DesignerDashboard />;
+    return <Navigate to="/designer-dashboard" replace />;
   }
 
   if (isHomeowner) {

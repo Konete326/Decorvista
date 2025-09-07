@@ -8,7 +8,7 @@ const reviewSchema = new mongoose.Schema({
   },
   targetType: {
     type: String,
-    enum: ['product', 'designer'],
+    enum: ['product', 'designer', 'user'],
     required: true
   },
   targetId: {
@@ -24,6 +24,14 @@ const reviewSchema = new mongoose.Schema({
   comment: {
     type: String,
     maxlength: [500, 'Comment cannot exceed 500 characters']
+  },
+  consultation: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Consultation'
+  },
+  isVisible: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true

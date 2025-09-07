@@ -47,7 +47,34 @@ const productSchema = new mongoose.Schema({
     min: 0,
     max: 5,
     default: 0
-  }
+  },
+  reviewCount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  reviews: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 5
+    },
+    comment: {
+      type: String,
+      required: true,
+      maxlength: [500, 'Review comment cannot exceed 500 characters']
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });

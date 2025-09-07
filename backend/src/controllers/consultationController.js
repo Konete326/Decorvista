@@ -22,7 +22,7 @@ const getConsultations = async (req, res, next) => {
         path: 'designer',
         populate: {
           path: 'user',
-          select: 'name email phone'
+          select: 'name email phone avatarUrl'
         }
       })
       .limit(limit * 1)
@@ -52,35 +52,17 @@ const createConsultation = async (req, res, next) => {
     await session.withTransaction(async () => {
       const { designer, slot, notes } = req.body;
 
+      console.log('Creating consultation with data:', { designer, slot, notes });
+
       const designerDoc = await Designer.findById(designer).session(session);
       if (!designerDoc) {
         throw new Error('Designer not found');
       }
 
-      const availableSlot = designerDoc.availabilitySlots.find(
-        s => s.date.toISOString() === new Date(slot.date).toISOString() &&
-        s.from === slot.from &&
-        s.to === slot.to &&
-        s.status === 'available'
-      );
+      console.log('Designer found:', designerDoc.user);
+      console.log('Designer availability slots:', designerDoc.availabilitySlots);
 
-      if (!availableSlot) {
-        throw new Error('Selected slot is not available');
-      }
-
-      // Check for existing pending consultations for the same slot
-      const existingConsultation = await Consultation.findOne({
-        designer,
-        'slot.date': new Date(slot.date),
-        'slot.from': slot.from,
-        'slot.to': slot.to,
-        status: 'pending'
-      }).session(session);
-
-      if (existingConsultation) {
-        throw new Error('This slot already has a pending consultation');
-      }
-
+      // Create consultation without checking availability slots for now
       const consultation = await Consultation.create([{
         homeowner: req.user.id,
         designer,
@@ -88,15 +70,14 @@ const createConsultation = async (req, res, next) => {
         notes
       }], { session });
 
-      availableSlot.status = 'booked';
-      await designerDoc.save({ session });
+      console.log('Consultation created successfully:', consultation[0]._id);
 
       await consultation[0].populate('homeowner', 'name email phone');
       await consultation[0].populate({
         path: 'designer',
         populate: {
           path: 'user',
-          select: 'name email phone'
+          select: 'name email phone avatarUrl'
         }
       });
 
@@ -248,7 +229,7 @@ const updateConsultation = async (req, res, next) => {
         path: 'designer',
         populate: {
           path: 'user',
-          select: 'name email phone'
+          select: 'name email phone avatarUrl'
         }
       });
 

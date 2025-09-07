@@ -224,6 +224,11 @@ const getOrders = async (req, res) => {
       query.user = req.user.id;
     }
 
+    // Add status filter if provided
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+
     const orders = await Order.find(query)
       .populate('items.product', 'name title images price category')
       .populate('user', 'name email phone')
@@ -236,13 +241,14 @@ const getOrders = async (req, res) => {
     res.json({
       success: true,
       data: orders,
-      meta: {
+      pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
         totalItems: total
       }
     });
   } catch (error) {
+    console.error('Get orders error:', error);
     res.status(500).json({
       success: false,
       message: error.message

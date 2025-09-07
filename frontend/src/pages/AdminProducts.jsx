@@ -177,6 +177,10 @@ const AdminProducts = () => {
                     <h3 className="text-lg font-medium">{product.title}</h3>
                     <p className="text-gray-500">${product.price}</p>
                     <p className="text-sm text-gray-400">Inventory: {product.inventory}</p>
+                    <p className="text-sm text-gray-400">
+                      Rating: {product.rating ? `${product.rating.toFixed(1)}/5` : 'No ratings'} 
+                      ({product.reviewCount || 0} reviews)
+                    </p>
                   </div>
                 </div>
                 <div className="flex space-x-2">

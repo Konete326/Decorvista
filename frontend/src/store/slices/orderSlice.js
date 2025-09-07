@@ -97,10 +97,10 @@ const orderSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.orders = action.payload.orders || [];
-        state.totalPages = action.payload.totalPages || 0;
-        state.currentPage = action.payload.currentPage || 1;
-        state.totalOrders = action.payload.totalOrders || 0;
+        state.orders = action.payload.data || [];
+        state.totalPages = action.payload.pagination?.totalPages || 0;
+        state.currentPage = action.payload.pagination?.currentPage || 1;
+        state.totalOrders = action.payload.pagination?.totalItems || 0;
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.isLoading = false;

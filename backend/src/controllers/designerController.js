@@ -4,8 +4,8 @@ const { body, query } = require('express-validator');
 
 const getDesigners = async (req, res, next) => {
   try {
-    const { specialty, location, page = 1, limit = 10 } = req.query;
-    const queryObj = { status: 'approved' };
+    const { specialty, location, page = 1, limit = 50 } = req.query;
+    const queryObj = {}; // Remove status filter to show all designers
 
     if (specialty) {
       queryObj.specialties = { $in: [specialty] };
@@ -14,11 +14,68 @@ const getDesigners = async (req, res, next) => {
       queryObj.location = new RegExp(location, 'i');
     }
 
-    const designers = await Designer.find(queryObj)
-      .populate('user', 'name email avatarUrl')
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort('-createdAt');
+    console.log('Designer query:', queryObj);
+
+    const designers = await Designer.aggregate([
+      { $match: queryObj },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $lookup: {
+          from: 'reviews',
+          localField: '_id',
+          foreignField: 'designer',
+          as: 'reviews'
+        }
+      },
+      {
+        $addFields: {
+          averageRating: {
+            $cond: {
+              if: { $gt: [{ $size: '$reviews' }, 0] },
+              then: { $avg: '$reviews.rating' },
+              else: 0
+            }
+          },
+          reviewCount: { $size: '$reviews' }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          user: {
+            _id: 1,
+            name: 1,
+            email: 1,
+            phone: 1,
+            avatarUrl: 1
+          },
+          professionalTitle: 1,
+          specialties: 1,
+          location: 1,
+          hourlyRate: 1,
+          bio: 1,
+          portfolio: 1,
+          availabilitySlots: 1,
+          status: 1,
+          createdAt: 1,
+          averageRating: 1,
+          reviewCount: 1
+        }
+      },
+      { $sort: { averageRating: -1, reviewCount: -1, createdAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit * 1 }
+    ]);
+
+    console.log('Found designers with ratings:', designers.length);
 
     const total = await Designer.countDocuments(queryObj);
 
@@ -32,6 +89,7 @@ const getDesigners = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('Error fetching designers:', error);
     next(error);
   }
 };
@@ -101,12 +159,20 @@ const createDesigner = async (req, res, next) => {
       profileCompleted: true
     });
 
-    // Optionally sync phone number to User profile if provided
+    // Optionally update phone and profile image in User model if provided
+    const userUpdates = {};
     if (req.body.phone) {
-      await User.findByIdAndUpdate(req.user.id, { phone: req.body.phone });
+      userUpdates.phone = req.body.phone;
+    }
+    if (req.body.profileImage) {
+      userUpdates.avatarUrl = req.body.profileImage;
+    }
+    
+    if (Object.keys(userUpdates).length > 0) {
+      await User.findByIdAndUpdate(req.user.id, userUpdates);
     }
 
-    await designer.populate('user', 'name email avatarUrl');
+    await designer.populate('user', 'name email avatarUrl phone');
 
     console.log('Designer created successfully:', designer._id);
     res.status(201).json({
@@ -145,11 +211,24 @@ const updateDesigner = async (req, res, next) => {
       });
     }
 
+    // Update phone and profile image in User model if provided
+    const userUpdates = {};
+    if (req.body.phone) {
+      userUpdates.phone = req.body.phone;
+    }
+    if (req.body.profileImage) {
+      userUpdates.avatarUrl = req.body.profileImage;
+    }
+    
+    if (Object.keys(userUpdates).length > 0) {
+      await User.findByIdAndUpdate(designer.user, userUpdates);
+    }
+
     designer = await Designer.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    ).populate('user', 'name email avatarUrl');
+    ).populate('user', 'name email avatarUrl phone');
 
     res.json({
       success: true,

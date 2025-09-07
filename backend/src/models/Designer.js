@@ -72,6 +72,10 @@ const designerSchema = new mongoose.Schema({
   hourlyRate: {
     type: Number,
     min: 0
+  },
+  phone: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true

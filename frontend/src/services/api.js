@@ -38,7 +38,7 @@ api.interceptors.response.use(
   }
 );
 
-export const authAPI = {
+const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   logout: () => api.post('/auth/logout'),
@@ -46,7 +46,7 @@ export const authAPI = {
   updateMe: (data) => api.put('/users/me', data)
 };
 
-export const designerAPI = {
+const designerAPI = {
   getAll: (params) => api.get('/designers', { params }),
   getById: (id) => api.get(`/designers/${id}`),
   getMe: () => api.get('/designers/me'),
@@ -54,62 +54,68 @@ export const designerAPI = {
   update: (id, data) => api.put(`/designers/${id}`, data)
 };
 
-export const productAPI = {
+const productAPI = {
   getAll: (params) => api.get('/products', { params }),
   getById: (id) => api.get(`/products/${id}`),
   create: (data) => api.post('/products', data),
   update: (id, data) => api.put(`/products/${id}`, data),
-  delete: (id) => api.delete(`/products/${id}`)
+  delete: (id) => api.delete(`/products/${id}`),
+  // Product reviews
+  getReviews: (id, params) => api.get(`/products/${id}/reviews`, { params }),
+  addReview: (id, data) => api.post(`/products/${id}/reviews`, data),
+  updateReview: (id, reviewId, data) => api.put(`/products/${id}/reviews/${reviewId}`, data),
+  deleteReview: (id, reviewId) => api.delete(`/products/${id}/reviews/${reviewId}`)
 };
 
-export const categoryAPI = {
+const categoryAPI = {
   getAll: () => api.get('/categories'),
   create: (data) => api.post('/categories', data)
 };
 
-export const galleryAPI = {
+const galleryAPI = {
   getAll: (params) => api.get('/gallery', { params }),
   create: (data) => api.post('/gallery', data)
 };
 
-export const favoriteAPI = {
+const favoriteAPI = {
   getAll: () => api.get('/favorites'),
   add: (data) => api.post('/favorites', data),
   remove: (id) => api.delete(`/favorites/${id}`)
 };
 
-export const consultationAPI = {
+const consultationAPI = {
   getAll: (params) => api.get('/consultations', { params }),
   create: (data) => api.post('/consultations', data),
-  update: (id, data) => api.put(`/consultations/${id}`, data)
+  update: (id, data) => api.put(`/consultations/${id}`, data),
+  updateStatus: (id, data) => api.put(`/consultations/${id}`, data)
 };
 
-export const reviewAPI = {
+const reviewAPI = {
   getAll: (params) => api.get('/reviews', { params }),
   create: (data) => api.post('/reviews', data)
 };
 
-export const cartAPI = {
+const cartAPI = {
   get: () => api.get('/cart'),
   add: (data) => api.post('/cart', data),
   update: (data) => api.put('/cart', data)
 };
 
-export const orderAPI = {
+const orderAPI = {
   create: (data) => api.post('/orders', data),
   getAll: (params) => api.get('/orders', { params }),
   getById: (id) => api.get(`/orders/${id}`),
   updateStatus: (id, data) => api.put(`/orders/${id}`, data)
 };
 
-export const adminAPI = {
+const adminAPI = {
   getReports: () => api.get('/admin/reports'),
   getPendingDesigners: () => api.get('/admin/designers/pending'),
   approveDesigner: (designerId) => api.put(`/admin/designers/${designerId}/approve`),
   rejectDesigner: (designerId, data) => api.put(`/admin/designers/${designerId}/reject`, data)
 };
 
-export const uploadAPI = {
+const uploadAPI = {
   single: (file) => {
     const formData = new FormData();
     formData.append('image', file);
@@ -126,9 +132,38 @@ export const uploadAPI = {
   }
 };
 
-export const userAPI = {
+const userAPI = {
   getAll: (params) => api.get('/users/all', { params }),
   updateStatus: (userId, data) => api.put(`/users/${userId}/status`, data)
 };
 
+import { userProfileAPI } from './userProfileAPI';
+
+const contactAPI = {
+  create: (data) => api.post('/contact', data),
+  getAll: (params) => api.get('/contact', { params }),
+  getById: (id) => api.get(`/contact/${id}`),
+  update: (id, data) => api.put(`/contact/${id}`, data),
+  delete: (id) => api.delete(`/contact/${id}`),
+  getStats: () => api.get('/contact/stats')
+};
+
+export { 
+  api, 
+  authAPI, 
+  productAPI, 
+  categoryAPI, 
+  cartAPI, 
+  orderAPI, 
+  designerAPI, 
+  consultationAPI, 
+  reviewAPI, 
+  favoriteAPI, 
+  galleryAPI, 
+  uploadAPI, 
+  userProfileAPI, 
+  userAPI, 
+  adminAPI,
+  contactAPI
+};
 export default api;

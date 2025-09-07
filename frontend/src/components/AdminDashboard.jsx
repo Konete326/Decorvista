@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import AdminCategoryManagement from './AdminCategoryManagement';
 import AdminDesignerManagement from './AdminDesignerManagement';
 import AdminOrderManagement from './AdminOrderManagement';
+import AdminProfileManagement from './AdminProfileManagement';
 
 const AdminDashboard = () => {
   const [reports, setReports] = useState(null);
@@ -132,6 +133,11 @@ const AdminDashboard = () => {
           <h3 className="text-lg font-semibold text-neutral-900 mb-4">Order Management</h3>
           <AdminOrderManagement />
         </div>
+      </div>
+
+      {/* Profile Management Section */}
+      <div className="mt-8">
+        <AdminProfileManagement />
       </div>
 
       {/* Management Sections */}

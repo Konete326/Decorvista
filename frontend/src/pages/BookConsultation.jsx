@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { consultationAPI } from '../services/api';
+import { consultationAPI, designerAPI } from '../services/api';
 import { useSelector } from 'react-redux';
 
 const BookConsultation = () => {
@@ -9,8 +9,9 @@ const BookConsultation = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   
-  const { designer, selectedDate, selectedSlot, notes } = location.state || {};
+  const { designer: passedDesigner, selectedDate, selectedSlot, notes } = location.state || {};
   
+  const [designer, setDesigner] = useState(passedDesigner || null);
   const [formData, setFormData] = useState({
     date: selectedDate || '',
     time: selectedSlot || '',
@@ -20,6 +21,21 @@ const BookConsultation = () => {
     phone: user?.phone || ''
   });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchDesigner = async () => {
+      if (!designer && designerId) {
+        try {
+          const response = await designerAPI.getById(designerId);
+          setDesigner(response.data.data);
+        } catch (error) {
+          console.error('Failed to fetch designer:', error);
+        }
+      }
+    };
+
+    fetchDesigner();
+  }, [designerId, designer]);
 
   const handleChange = (e) => {
     setFormData({
@@ -37,28 +53,57 @@ const BookConsultation = () => {
         designer: designerId,
         slot: {
           date: formData.date,
-          time: formData.time
+          from: formData.time,
+          to: formData.time === '09:00' ? '10:00' :
+              formData.time === '10:00' ? '11:00' :
+              formData.time === '11:00' ? '12:00' :
+              formData.time === '14:00' ? '15:00' :
+              formData.time === '15:00' ? '16:00' :
+              formData.time === '16:00' ? '17:00' : '10:00'
         },
-        serviceType: formData.serviceType,
-        address: formData.address,
-        notes: formData.notes,
-        phone: formData.phone
+        notes: formData.notes
       };
 
+      console.log('Sending consultation data:', consultationData);
       await consultationAPI.create(consultationData);
       alert('Consultation booked successfully!');
       navigate('/dashboard');
     } catch (error) {
+      console.error('Consultation booking error:', error.response?.data);
       alert(error.response?.data?.message || 'Failed to book consultation');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!designer) {
+  if (!isAuthenticated) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <p className="text-center text-gray-500">Invalid booking request</p>
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">Please log in to book a consultation</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!designer && !designerId) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">No designer selected for booking</p>
+          <button
+            onClick={() => navigate('/designers')}
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+          >
+            Browse Designers
+          </button>
+        </div>
       </div>
     );
   }
@@ -72,13 +117,13 @@ const BookConsultation = () => {
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
             <span className="text-2xl font-bold text-indigo-600">
-              {designer.user?.name?.charAt(0) || 'D'}
+              {designer?.user?.name?.charAt(0) || 'D'}
             </span>
           </div>
           <div>
-            <h3 className="font-semibold">{designer.user?.name}</h3>
-            <p className="text-gray-600">{designer.professionalTitle}</p>
-            <p className="text-indigo-600 font-medium">${designer.hourlyRate}/hour</p>
+            <h3 className="font-semibold">{designer?.user?.name || 'Designer'}</h3>
+            <p className="text-gray-600">{designer?.professionalTitle || 'Interior Designer'}</p>
+            <p className="text-indigo-600 font-medium">${designer?.hourlyRate || '0'}/hour</p>
           </div>
         </div>
       </div>

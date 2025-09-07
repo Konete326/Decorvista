@@ -80,10 +80,22 @@ const AdminUserManagement = () => {
             <td className="px-6 py-4 whitespace-nowrap">
               <div className="flex items-center">
                 <div className="flex-shrink-0 h-10 w-10">
-                  <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                    <span className="text-gray-600 font-medium">
-                      {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </span>
+                  <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                    {user.avatarUrl ? (
+                      <img
+                        src={`http://localhost:5000${user.avatarUrl}`}
+                        alt={user.name || 'User'}
+                        className="h-10 w-10 rounded-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = `<span class="text-gray-600 font-medium">${user.name?.charAt(0)?.toUpperCase() || 'U'}</span>`;
+                        }}
+                      />
+                    ) : (
+                      <span className="text-gray-600 font-medium">
+                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="ml-4">

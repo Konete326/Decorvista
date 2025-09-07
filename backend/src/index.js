@@ -16,17 +16,21 @@ const errorHandler = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
-const designerRoutes = require('./routes/designerRoutes');
+const userProfileRoutes = require('./routes/userProfileRoutes');
 const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
-const galleryRoutes = require('./routes/galleryRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const designerRoutes = require('./routes/designerRoutes');
 const consultationRoutes = require('./routes/consultationRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const cartRoutes = require('./routes/cartRoutes');
-const adminRoutes = require('./routes/admin');
-const uploadRoutes = require('./routes/uploadRoutes');
 const favoriteRoutes = require('./routes/favoriteRoutes');
+const galleryRoutes = require('./routes/galleryRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const statsRoutes = require('./routes/statsRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -88,7 +92,8 @@ const limiter = rateLimit({
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
   delayAfter: 50, // allow 50 requests per 15 minutes, then...
-  delayMs: 500 // begin adding 500ms of delay per request above 50
+  delayMs: () => 500, // Fixed: use function for new behavior
+  validate: { delayMs: false } // Disable warning
 });
 
 app.use('/api', limiter);
@@ -126,14 +131,39 @@ io.on('connection', (socket) => {
     console.log('Admin joined admin room');
   });
 
+  // Real-time rating updates
+  socket.on('rating-updated', (data) => {
+    const { targetType, targetId, newRating } = data;
+    
+    // Broadcast to all users viewing this profile
+    socket.broadcast.emit('rating-update', {
+      targetType,
+      targetId,
+      newRating,
+      timestamp: new Date()
+    });
+
+    // Notify admins
+    io.to('admin-room').emit('new-rating', {
+      targetType,
+      targetId,
+      newRating,
+      timestamp: new Date()
+    });
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
 });
 
+// Make io available to controllers
+app.set('io', io);
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/user-profiles', userProfileRoutes);
 app.use('/api/designers', designerRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -145,6 +175,9 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/favorites', favoriteRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

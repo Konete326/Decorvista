@@ -52,7 +52,7 @@ const initialState = {
   user: null,
   token: localStorage.getItem('token'),
   isLoading: false,
-  isAuthenticated: false,
+  isAuthenticated: false, // Set to false initially, will be set to true after successful auth
   error: null,
 };
 

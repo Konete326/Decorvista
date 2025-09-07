@@ -66,12 +66,43 @@ const Checkout = () => {
         price: consultation.designer.hourlyRate
       }));
 
-      const orderData = {
-        items: getOrderItems().map(item => ({
+      // Validate and prepare items
+      let items = [];
+      
+      if (directBuy) {
+        if (!directBuyProduct) {
+          throw new Error('Direct buy product data is missing');
+        }
+        
+        const productId = directBuyProduct?.product?._id || 
+                         directBuyProduct?.product?.id || 
+                         directBuyProduct?._id || 
+                         directBuyProduct?.id;
+        
+        if (!productId) {
+          throw new Error('Product ID is missing from direct buy data');
+        }
+        
+        items = [{
+          product: productId,
+          quantity: directBuyProduct?.quantity || 1,
+          priceAt: directBuyProduct?.priceAt || directBuyProduct?.product?.price || directBuyProduct?.price
+        }];
+      } else {
+        const cartItems = getOrderItems();
+        if (!cartItems || cartItems.length === 0) {
+          throw new Error('No items in cart');
+        }
+        
+        items = cartItems.map(item => ({
           product: item.product._id || item.product.id,
           quantity: item.quantity,
           priceAt: item.priceAt || item.product.price
-        })),
+        }));
+      }
+
+      const orderData = {
+        items,
         shippingAddress: {
           name: formData.name,
           phone: formData.phone,
@@ -86,7 +117,11 @@ const Checkout = () => {
         consultationBookings
       };
 
+      console.log('Sending order data:', orderData);
+      console.log('Direct buy product:', directBuyProduct);
+      console.log('Items being sent:', orderData.items);
       const response = await orderAPI.create(orderData);
+      console.log('Order response:', response);
       
       // Clear cart after successful order (only if not direct buy)
       if (!directBuy) {
@@ -101,7 +136,16 @@ const Checkout = () => {
         }
       });
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to place order');
+      console.error('Order creation error:', error);
+      console.error('Error response:', error.response?.data);
+      
+      // Show detailed validation errors
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        const errorMessages = error.response.data.errors.map(err => err.msg || err.message).join('\n');
+        alert(`Validation errors:\n${errorMessages}`);
+      } else {
+        alert(error.response?.data?.message || 'Failed to place order');
+      }
     } finally {
       setLoading(false);
     }

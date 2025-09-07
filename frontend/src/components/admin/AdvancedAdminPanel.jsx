@@ -19,6 +19,7 @@ import Modal from '../ui/Modal';
 import AdminOrderManagement from '../AdminOrderManagement';
 import AdminUserManagement from '../AdminUserManagement';
 import AdminCategoryManagement from '../AdminCategoryManagement';
+import AdminContactManagement from '../AdminContactManagement';
 import { useSearchParams } from 'react-router-dom';
 import { adminAPI } from '../../services/api';
 
@@ -81,6 +82,7 @@ const AdvancedAdminPanel = () => {
     { id: 'orders', name: 'Order Management', icon: ShoppingBagIcon },
     { id: 'designers', name: 'Designer Approvals', icon: CalendarDaysIcon },
     { id: 'categories', name: 'Categories', icon: TagIcon },
+    { id: 'contacts', name: 'Contact Management', icon: UserGroupIcon },
   ];
 
   // Sync active tab with URL "tab" param
@@ -288,6 +290,8 @@ const AdvancedAdminPanel = () => {
         return <DesignerApprovalsTab />;
       case 'categories':
         return <CategoriesTab />;
+      case 'contacts':
+        return <AdminContactManagement />;
       default:
         return <AnalyticsTab />;
     }

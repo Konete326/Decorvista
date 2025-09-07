@@ -24,10 +24,11 @@ const validateReview = [
 const validateOrder = [
   body('shippingAddress.name').notEmpty().withMessage('Name is required'),
   body('shippingAddress.phone').notEmpty().withMessage('Phone is required'),
-  body('shippingAddress.address').notEmpty().withMessage('Address is required'),
+  body('shippingAddress.street').notEmpty().withMessage('Street address is required'),
   body('shippingAddress.city').notEmpty().withMessage('City is required'),
   body('shippingAddress.state').notEmpty().withMessage('State is required'),
   body('shippingAddress.zipCode').notEmpty().withMessage('Zip code is required'),
+  body('shippingAddress.country').notEmpty().withMessage('Country is required'),
   body('paymentMethod').optional().isIn(['cash_on_delivery', 'credit_card', 'bank_transfer']),
   body('items').optional().isArray().withMessage('Items must be an array'),
   body('items.*.product').optional().isMongoId().withMessage('Valid product ID required'),
