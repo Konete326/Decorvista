@@ -8,7 +8,8 @@ A full-stack MERN application that connects homeowners with interior designers, 
 **Email:** sameerdevexpert@gmail.com  
 **GitHub:** (https://github.com/Konete326) 
 **LinkedIn:** (https://profile.indeed.com/?hl=en_PK&co=PK&from=gnav-homepage)
-
+full Video Link
+https://www.linkedin.com/posts/sameer-akram-52662a28a_mernstack-webdevelopment-ecommerce-activity-7370773739849924608-6d_t?utm_source=share&utm_medium=member_android&rcm=ACoAAEY3UG4BMtDbc-b-gO8u1ekw4j53fwKcetk
 This project is developed and maintained by Muhammad Sameer, a full-stack developer specializing in MERN stack applications.
 ![bandicam 2025-09-08 03-37-14-390](https://github.com/user-attachments/assets/d87552c1-c3b6-4146-bf36-5da2f4f3fd03)
 ![bandicam 2025-09-08 03-36-58-881](https://github.com/user-attachments/assets/7f65e82a-5ee7-4ac3-81b6-9263fe85469f)
